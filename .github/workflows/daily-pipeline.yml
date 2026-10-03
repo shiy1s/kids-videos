@@ -41,6 +41,7 @@ jobs:
           cat worker/job.json
 
       - name: Reserve job ID before any YouTube upload
+        id: reserve
         shell: bash
         run: |
           set -euo pipefail
