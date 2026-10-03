@@ -60,11 +60,13 @@ jobs:
           existing = next((j for j in jobs if j.get("jobId") == job_id), None)
           if existing and existing.get("status") in {"reserved", "published"}:
               print(f"JOB_ALREADY_HANDLED:{job_id}:{existing.get('status')}")
-              raise SystemExit(20)
+              Path(os.environ["GITHUB_OUTPUT"]).write_text("skip=true\\n", encoding="utf-8")
+              raise SystemExit(0)
           jobs[:] = [j for j in jobs if j.get("jobId") != job_id]
           jobs.append({"jobId": job_id, "status": "reserved"})
           path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
           print(f"RESERVED:{job_id}")
+          Path(os.environ["GITHUB_OUTPUT"]).write_text("skip=false\\n", encoding="utf-8")
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -73,6 +75,7 @@ jobs:
           git push
 
       - name: Generate, render, and QC
+        if: ${{ steps.reserve.outputs.skip != 'true' }}
         run: |
           set -euo pipefail
           mkdir -p worker/output
@@ -81,6 +84,7 @@ jobs:
             --output-dir worker/output
 
       - name: Keep rendered video as a short-lived debug artifact
+        if: ${{ steps.reserve.outputs.skip != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: kids-video-${{ github.run_id }}
@@ -89,6 +93,7 @@ jobs:
           retention-days: 3
 
       - name: Upload privately to YouTube
+        if: ${{ steps.reserve.outputs.skip != 'true' }}
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
@@ -114,7 +119,7 @@ jobs:
           cat worker/youtube_result.json
 
       - name: Mark job published
-        if: ${{ success() }}
+        if: ${{ steps.reserve.outputs.skip != 'true' && success() }}
         shell: bash
         run: |
           set -euo pipefail
