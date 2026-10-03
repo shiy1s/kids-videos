@@ -1,0 +1,17 @@
+{
+  "policyVersion": "1.0",
+  "content": {
+    "originalOnly": true,
+    "childFriendly": true,
+    "allowScaryThemes": false,
+    "allowGraphicViolence": false,
+    "allowSexualContent": false,
+    "allowHateContent": false,
+    "allowDangerousInstructionalContent": false,
+    "allowAdultThemes": false
+  },
+  "generation": {
+    "avoidCopyrightedCharacters": true,
+    "avoidLivingArtistStyleImitation": true
+  }
+}
