@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kids Video Scene",
+  "type": "object",
+  "required": ["sceneId", "order", "visualPrompt", "narration"],
+  "properties": {
+    "sceneId": {"type":"string","minLength":1},
+    "order": {"type":"integer","minimum":1},
+    "durationSeconds": {"type":"number","minimum":1,"maximum":30},
+    "visualPrompt": {"type":"string","minLength":1},
+    "narration": {"type":"string","minLength":1},
+    "assetPath": {"type":["string","null"]},
+    "audioPath": {"type":["string","null"]}
+  }
+}
