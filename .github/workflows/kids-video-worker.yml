@@ -27,11 +27,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install FFmpeg and Python dependencies
+      - name: Install free local media tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
-          python -m pip install --upgrade pip requests
+          sudo apt-get install -y ffmpeg espeak-ng
+          python -m pip install --upgrade pip pillow
 
       - name: Prepare job
         env:
@@ -41,8 +41,6 @@ jobs:
           printf '%s' "$JOB_JSON" > worker/${{ inputs.job_id }}/job.json
 
       - name: Generate assets, render, and QC
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           python scripts/generate/run_media_worker.py \
             --job-json worker/${{ inputs.job_id }}/job.json \
@@ -72,7 +70,12 @@ jobs:
               "stage": "render_qc",
               "artifactId": int(os.environ["ARTIFACT_ID"])
           }).encode()
-          request = urllib.request.Request(os.environ["RESUME_URL"], data=payload, headers={"Content-Type":"application/json"}, method="POST")
+          request = urllib.request.Request(
+              os.environ["RESUME_URL"],
+              data=payload,
+              headers={"Content-Type":"application/json"},
+              method="POST"
+          )
           with urllib.request.urlopen(request, timeout=60) as response:
               print(response.status)
           PY
@@ -90,7 +93,12 @@ jobs:
               "status": "failed",
               "stage": "render_qc"
           }).encode()
-          request = urllib.request.Request(os.environ["RESUME_URL"], data=payload, headers={"Content-Type":"application/json"}, method="POST")
+          request = urllib.request.Request(
+              os.environ["RESUME_URL"],
+              data=payload,
+              headers={"Content-Type":"application/json"},
+              method="POST"
+          )
           with urllib.request.urlopen(request, timeout=60) as response:
               print(response.status)
           PY
