@@ -1,31 +1,63 @@
-# Kids Videos Automation
+# n8n YouTube Kids
 
-Production-oriented automation for creating and publishing original, child-friendly cartoon videos.
+Production-oriented automation for generating original child-directed cartoon videos.
 
-## Architecture
-- n8n: orchestration, scheduling, workflow state
-- GitHub Actions: deterministic workers and rendering
-- FFmpeg: final assembly/rendering
-- AI services: story/script/asset generation through replaceable adapters
-- YouTube API: publishing and publication tracking
+## Current production architecture
+
+```
+n8n
+  |
+  +-- Story + scene planning
+  +-- Safety and duration validation
+  +-- Job payload
+  |
+  +-- GitHub Actions: Kids Video Worker
+  |     +-- original scene image generation
+  |     +-- narration generation
+  |     +-- scene manifest
+  |     +-- FFmpeg render
+  |     +-- media QC
+  |     +-- GitHub artifact
+  |     +-- n8n resume callback
+  |
+  +-- Artifact download/decompression
+  +-- Private YouTube upload
+  +-- Publication tracking
+```
+
+## n8n
+
+Production workflow: `youtube kids`
+
+Workflow ID: `e96gnQMkBsnfkag7`
+
+The workflow is deliberately inactive until GitHub and YouTube credentials are connected.
+
+The n8n instance has a 180-second execution timeout. The GitHub worker handoff uses the GitHub node's Dispatch and Wait mechanism so the n8n execution can suspend while the external worker performs media generation/rendering.
+
+## GitHub
+
+Repository: `shiy1s/kids-videos`
+
+Main worker:
+
+`.github/workflows/kids-video-worker.yml`
+
+The worker is deterministic after the AI asset calls: it generates the requested media, renders with the repository FFmpeg renderer, runs media QC, uploads the MP4 artifact, and calls the n8n resume URL.
+
+## Publishing safety
+
+YouTube upload is hard-coded to private mode in the workflow. The publish gate also refuses to continue unless the job explicitly says:
+
+- privacyStatus = private
+- madeForKids = true
+
+Automatic public publishing is not enabled.
 
 ## Isolation
-This repository is independent of the existing Whop automation project. Do not import, modify, or depend on `shiy1s/whopautomation` or its n8n workflow.
 
-## Safety
-- Create original content; do not imitate living artists or copyrighted franchises.
-- Avoid unsafe, frightening, sexual, hateful, violent, or otherwise inappropriate content for children.
-- Do not publish until automated QC passes.
-- Never commit API keys, OAuth refresh tokens, or other secrets.
+This project is completely separate from the Whop automation. It must not import, modify, or depend on `shiy1s/whopautomation` or its n8n workflow.
 
-## Project stages
-1. Content ideation
-2. Script generation
-3. Scene/asset planning
-4. Asset generation
-5. Voice/music generation
-6. FFmpeg rendering
-7. Automated QC
-8. Metadata generation
-9. YouTube publishing
-10. Publication tracking
+## Setup
+
+See `SETUP.md`.
