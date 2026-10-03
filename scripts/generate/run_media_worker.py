@@ -1,63 +1,22 @@
-"""Generate scene images/audio, render, and QC one Kids Video job."""
+"""Generate original cartoon assets locally, render, and QC a Kids Video job.
+
+No paid AI API is used. Images are procedural Pillow artwork and narration uses
+the open-source espeak-ng command installed on the GitHub runner.
+"""
 
 from __future__ import annotations
 
 import argparse
-import base64
 import json
-import os
+import shutil
 import subprocess
 from pathlib import Path
 
-import requests
+from scripts.generate.procedural_assets import make_scene
 
 
-OPENAI_URL = "https://api.openai.com/v1"
-
-
-def api_headers() -> dict[str, str]:
-    key = os.environ.get("OPENAI_API_KEY")
-    if not key:
-        raise RuntimeError("OPENAI_API_KEY_MISSING")
-    return {"Authorization": f"Bearer {key}"}
-
-
-def generate_image(prompt: str, output: Path) -> None:
-    payload = {
-        "model": os.environ.get("KIDS_IMAGE_MODEL", "gpt-image-1-mini"),
-        "prompt": prompt,
-        "size": "1024x1536",
-        "quality": os.environ.get("KIDS_IMAGE_QUALITY", "medium"),
-    }
-    response = requests.post(
-        f"{OPENAI_URL}/images/generations",
-        headers={**api_headers(), "Content-Type": "application/json"},
-        json=payload,
-        timeout=300,
-    )
-    response.raise_for_status()
-    data = response.json()["data"][0]
-    encoded = data.get("b64_json")
-    if not encoded:
-        raise RuntimeError("IMAGE_RESPONSE_MISSING_B64")
-    output.write_bytes(base64.b64decode(encoded))
-
-
-def generate_audio(text: str, output: Path) -> None:
-    payload = {
-        "model": os.environ.get("KIDS_TTS_MODEL", "gpt-4o-mini-tts"),
-        "input": text,
-        "voice": os.environ.get("KIDS_TTS_VOICE", "alloy"),
-        "response_format": "mp3",
-    }
-    response = requests.post(
-        f"{OPENAI_URL}/audio/speech",
-        headers={**api_headers(), "Content-Type": "application/json"},
-        json=payload,
-        timeout=180,
-    )
-    response.raise_for_status()
-    output.write_bytes(response.content)
+def run(cmd: list[str]) -> None:
+    subprocess.run(cmd, check=True)
 
 
 def main() -> int:
@@ -76,26 +35,25 @@ def main() -> int:
     audio.mkdir(parents=True, exist_ok=True)
     artifacts.mkdir(parents=True, exist_ok=True)
 
-    character_bible = job["content"].get("characterBible", "")
-    style_bible = job["content"].get(
-        "styleBible",
-        "original child-friendly 2D cartoon, clean shapes, bright but gentle colors, soft lighting",
-    )
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("FFMPEG_NOT_INSTALLED")
+    if not shutil.which("espeak-ng"):
+        raise RuntimeError("ESPEAK_NG_NOT_INSTALLED")
 
     manifest_scenes = []
     for scene in scenes:
         scene_id = scene["sceneId"]
-        visual_prompt = (
-            f"{style_bible}. "
-            f"Character continuity: {character_bible}. "
-            f"Scene: {scene['visualPrompt']}. "
-            "Original characters only. No copyrighted characters, logos, brands, or frightening imagery. "
-            "No readable text in the image. Vertical composition with clear foreground and background."
-        )
         image_path = images / f"{scene_id}.png"
-        audio_path = audio / f"{scene_id}.mp3"
-        generate_image(visual_prompt, image_path)
-        generate_audio(scene["narration"], audio_path)
+        audio_path = audio / f"{scene_id}.wav"
+
+        make_scene(scene, int(scene["order"]) - 1, image_path)
+
+        narration = scene["narration"].strip()
+        run([
+            "espeak-ng", "-s", "145", "-p", "55", "-a", "145",
+            "-w", str(audio_path), narration,
+        ])
+
         manifest_scenes.append({
             **scene,
             "assetPath": str(image_path),
@@ -107,15 +65,13 @@ def main() -> int:
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     output = artifacts / "kids-video.mp4"
-    subprocess.run([
+    run([
         "python", "scripts/render/render_ffmpeg.py",
         "--manifest", str(manifest_path),
         "--output", str(output),
-    ], check=True)
+    ])
 
-    subprocess.run([
-        "python", "scripts/qc/validate_media.py", str(output),
-    ], check=True)
+    run(["python", "scripts/qc/validate_media.py", str(output)])
 
     result = {
         "jobId": job["jobId"],
@@ -124,9 +80,7 @@ def main() -> int:
         "output": str(output),
         "sceneCount": len(manifest_scenes),
     }
-    (work / "worker_result.json").write_text(
-        json.dumps(result, indent=2), encoding="utf-8"
-    )
+    (work / "worker_result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps(result))
     return 0
 
