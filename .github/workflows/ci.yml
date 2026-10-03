@@ -11,9 +11,18 @@ permissions:
 jobs:
   sanity:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install media tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg espeak-ng
+          python -m pip install --upgrade pip
+          python -m pip install pillow
 
       - name: Verify repository structure
         shell: bash
@@ -22,7 +31,30 @@ jobs:
           test -f README.md
           test -f .gitignore
           test -f .env.example
-          test -d scripts
+          test -f scripts/generate/run_media_worker.py
+          test -f scripts/generate/procedural_assets.py
+          test -f scripts/render/render_ffmpeg.py
+          test -f scripts/qc/validate_media.py
+          test -f scripts/publish/upload_youtube.py
           test -d config
           test -d tests
           echo "Repository structure OK"
+
+      - name: Run media pipeline without YouTube upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-worker
+          python scripts/generate/create_daily_job.py --output ci-worker/job.json
+          python scripts/generate/run_media_worker.py \
+            --job-json ci-worker/job.json \
+            --output-dir ci-worker/output
+          test -f ci-worker/output/artifacts/kids-video.mp4
+          python scripts/qc/validate_media.py ci-worker/output/artifacts/kids-video.mp4
+
+      - name: Upload CI video artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kids-video-ci-${{ github.run_id }}
+          path: ci-worker/output/artifacts/kids-video.mp4
+          retention-days: 1
