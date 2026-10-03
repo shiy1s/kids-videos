@@ -1,0 +1,38 @@
+name: Render Kids Video
+
+on:
+  workflow_dispatch:
+    inputs:
+      manifest:
+        description: "Path to scene manifest in the repository"
+        required: true
+        type: string
+      output:
+        description: "Output path"
+        required: true
+        default: "artifacts/kids-video.mp4"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Render
+        run: |
+          python scripts/render/render_ffmpeg.py \
+            --manifest "${{ inputs.manifest }}" \
+            --output "${{ inputs.output }}"
+      - name: QC
+        run: python scripts/qc/validate_media.py "${{ inputs.output }}"
+      - name: Upload rendered video
+        uses: actions/upload-artifact@v4
+        with:
+          name: kids-video
+          path: ${{ inputs.output }}
+          if-no-files-found: error
