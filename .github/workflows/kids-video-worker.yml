@@ -1,0 +1,84 @@
+name: Kids Video Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "Unique Kids Video job ID"
+        required: true
+        type: string
+      job_json:
+        description: "Complete validated job JSON"
+        required: true
+        type: string
+
+run-name: Kids Video ${{ inputs.job_id }}
+
+permissions:
+  contents: write
+
+jobs:
+  generate-render-qc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install FFmpeg and Python dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip requests
+
+      - name: Prepare job
+        env:
+          JOB_JSON: ${{ inputs.job_json }}
+        run: |
+          mkdir -p worker/${{ inputs.job_id }}
+          printf '%s' "$JOB_JSON" > worker/${{ inputs.job_id }}/job.json
+
+      - name: Generate assets, render, and QC
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python scripts/generate/run_media_worker.py \
+            --job-json worker/${{ inputs.job_id }}/job.json \
+            --output-dir worker/${{ inputs.job_id }}
+
+      - name: Upload final video artifact
+        id: upload_video
+        uses: actions/upload-artifact@v4
+        with:
+          name: kids-video-${{ inputs.job_id }}
+          path: worker/${{ inputs.job_id }}/artifacts/kids-video.mp4
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Write worker result
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+          ARTIFACT_ID: ${{ steps.upload_video.outputs.artifact-id }}
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import os
+          result = {
+              "jobId": os.environ["JOB_ID"],
+              "status": "success",
+              "stage": "render_qc",
+              "artifactId": int(os.environ["ARTIFACT_ID"])
+          }
+          path = Path(f"results/{os.environ['JOB_ID']}.json")
+          path.parent.mkdir(parents=True, exist_ok=True)
+          path.write_text(json.dumps(result, indent=2), encoding="utf-8")
+          PY
+
+      - name: Commit worker result
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+        run: |
+          git config user.name "kids-video-worker"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "results/${JOB_ID}.json"
+          git commit -m "worker: result ${JOB_ID}" || exit 0
+          git push
