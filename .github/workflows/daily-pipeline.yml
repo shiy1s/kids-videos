@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -86,7 +86,7 @@ jobs:
 
       - name: Keep rendered video as a short-lived debug artifact
         if: ${{ steps.reserve.outputs.skip != 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kids-video-${{ github.run_id }}
           path: worker/output/artifacts/kids-video.mp4
