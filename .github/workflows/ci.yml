@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install media tools
         run: |
@@ -53,7 +53,7 @@ jobs:
           python scripts/qc/validate_media.py ci-worker/output/artifacts/kids-video.mp4
 
       - name: Upload CI video artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kids-video-ci-${{ github.run_id }}
           path: ci-worker/output/artifacts/kids-video.mp4
