@@ -1,59 +1,48 @@
 # GitHub Worker Contract
 
-## Inputs
+## Render worker inputs
 
-n8n dispatches `kids-video-worker.yml` with:
-
+`kids-video-worker.yml` receives:
 - `job_id`
 - `job_json`
-- `resumeUrl` supplied automatically by n8n GitHub Dispatch and Wait
+- `resumeUrl`
 
-The job JSON must contain:
+## Render worker responsibilities
 
-- `jobId`
-- `content.topic`
-- `content.ageRange`
-- `content.language`
-- `content.story`
-- `content.characterBible`
-- `content.styleBible`
-- `content.scenes[]`
-- `video.width`
-- `video.height`
-- `video.fps`
-
-## Worker responsibilities
-
-1. Generate one original image per scene.
-2. Generate narration audio for each scene.
-3. Build a scene manifest with image/audio paths.
+1. Create original procedural cartoon artwork with Pillow.
+2. Create narration locally with espeak-ng.
+3. Build the scene manifest.
 4. Render with `scripts/render/render_ffmpeg.py`.
 5. Run `scripts/qc/validate_media.py`.
 6. Upload the final MP4 as a GitHub Actions artifact.
-7. POST a JSON completion result to the n8n resume URL.
-8. POST a failure result to the same resume URL when the job fails.
+7. Resume n8n with `jobId`, `status`, `stage`, and `artifactId`.
 
-The worker never publishes to YouTube directly.
+## YouTube publisher inputs
+
+`youtube-publish.yml` receives:
+- `job_id`
+- `artifact_id`
+- `title`
+- `description`
+- `resumeUrl`
+
+## YouTube publisher
+
+The publisher downloads the render artifact and uses:
+- `YOUTUBE_CLIENT_ID`
+- `YOUTUBE_CLIENT_SECRET`
+- `YOUTUBE_REFRESH_TOKEN`
+
+The publisher sets:
+- privacy status: `private`
+- self declared Made for Kids: `true`
+- public stats viewable: `false`
+
+The publisher never makes a video public.
 
 ## Result
 
-Success:
+Success callback contains `status=success` and `youtubeVideoId`.
+Failure callback contains `status=failed` and the failed stage.
 
-```json
-{
-  "jobId": "kids-...",
-  "status": "success",
-  "stage": "render_qc",
-  "artifactId": 123456
-}
-```
-
-Failure:
-
-```json
-{
-  "jobId": "kids-...",
-  "status": "failed",
-  "stage": "render_qc"
-}
-```
+No paid AI service is used anywhere in the worker.
