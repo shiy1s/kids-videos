@@ -25,7 +25,7 @@ jobs:
   generate-render-qc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install free local media tools
         run: |
@@ -48,7 +48,7 @@ jobs:
 
       - name: Upload final video artifact
         id: upload_video
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kids-video-${{ inputs.job_id }}
           path: worker/${{ inputs.job_id }}/artifacts/kids-video.mp4
