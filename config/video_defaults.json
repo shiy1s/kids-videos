@@ -1,0 +1,16 @@
+{
+  "video": {
+    "targetAspectRatio": "9:16",
+    "targetWidth": 1080,
+    "targetHeight": 1920,
+    "minDurationSeconds": 20,
+    "maxDurationSeconds": 60,
+    "fps": 30
+  },
+  "audience": {
+    "childDirected": true
+  },
+  "publishing": {
+    "defaultPrivacyStatus": "private"
+  }
+}
