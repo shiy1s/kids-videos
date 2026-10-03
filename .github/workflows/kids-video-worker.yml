@@ -19,7 +19,7 @@ on:
 run-name: Kids Video ${{ inputs.job_id }}
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   generate-render-qc:
@@ -57,7 +57,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Resume n8n
+      - name: Resume n8n with success
         if: ${{ success() && inputs.resumeUrl != '' }}
         env:
           RESUME_URL: ${{ inputs.resumeUrl }}
@@ -72,50 +72,12 @@ jobs:
               "stage": "render_qc",
               "artifactId": int(os.environ["ARTIFACT_ID"])
           }).encode()
-          request = urllib.request.Request(
-              os.environ["RESUME_URL"],
-              data=payload,
-              headers={"Content-Type": "application/json"},
-              method="POST",
-          )
+          request = urllib.request.Request(os.environ["RESUME_URL"], data=payload, headers={"Content-Type":"application/json"}, method="POST")
           with urllib.request.urlopen(request, timeout=60) as response:
               print(response.status)
           PY
 
-      - name: Write worker result
-        if: ${{ always() }}
-        env:
-          JOB_ID: ${{ inputs.job_id }}
-          ARTIFACT_ID: ${{ steps.upload_video.outputs.artifact-id }}
-          JOB_STATUS: ${{ job.status }}
-        run: |
-          python - <<'PY'
-          import json, os
-          from pathlib import Path
-          result = {
-              "jobId": os.environ["JOB_ID"],
-              "status": os.environ["JOB_STATUS"],
-              "stage": "render_qc"
-          }
-          if os.environ.get("ARTIFACT_ID"):
-              result["artifactId"] = int(os.environ["ARTIFACT_ID"])
-          path = Path(f"results/{os.environ['JOB_ID']}.json")
-          path.parent.mkdir(parents=True, exist_ok=True)
-          path.write_text(json.dumps(result, indent=2), encoding="utf-8")
-          PY
-
-      - name: Commit worker result
-        if: ${{ always() }}
-        env:
-          JOB_ID: ${{ inputs.job_id }}
-        run: |
-          git config user.name "kids-video-worker"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "results/${JOB_ID}.json"
-          git commit -m "worker: result ${JOB_ID}" || exit 0
-          git push
-
-      - name: Resume n8n on failure
+      - name: Resume n8n with failure
         if: ${{ failure() && inputs.resumeUrl != '' }}
         env:
           RESUME_URL: ${{ inputs.resumeUrl }}
@@ -128,12 +90,7 @@ jobs:
               "status": "failed",
               "stage": "render_qc"
           }).encode()
-          request = urllib.request.Request(
-              os.environ["RESUME_URL"],
-              data=payload,
-              headers={"Content-Type": "application/json"},
-              method="POST",
-          )
+          request = urllib.request.Request(os.environ["RESUME_URL"], data=payload, headers={"Content-Type":"application/json"}, method="POST")
           with urllib.request.urlopen(request, timeout=60) as response:
               print(response.status)
           PY
