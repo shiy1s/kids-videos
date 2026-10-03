@@ -1,0 +1,75 @@
+name: Kids YouTube Publisher
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "Kids Video job ID"
+        required: true
+        type: string
+      artifact_id:
+        description: "GitHub Actions artifact ID containing kids-video.mp4"
+        required: true
+        type: string
+      title:
+        description: "YouTube title"
+        required: true
+        type: string
+      description:
+        description: "YouTube description"
+        required: true
+        type: string
+      resumeUrl:
+        description: "n8n callback URL"
+        required: false
+        type: string
+
+run-name: Kids YouTube Publisher
+permissions:
+  actions: read
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install YouTube client
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install google-api-python-client google-auth google-auth-httplib2
+      - name: Download render artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ inputs.artifact_id }}
+        run: |
+          mkdir -p publish
+          gh api -H "Accept: application/vnd.github+json" "/repos/${{ github.repository }}/actions/artifacts/${ARTIFACT_ID}/zip" > publish/artifact.zip
+          unzip -o publish/artifact.zip -d publish
+      - name: Locate video
+        run: |
+          VIDEO="$(find publish -type f -name 'kids-video.mp4' | head -n 1)"
+          test -n "$VIDEO"
+          cp "$VIDEO" publish/kids-video.mp4
+      - name: Upload privately to YouTube
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: |
+          python scripts/publish/upload_youtube.py --video publish/kids-video.mp4 --title "${{ inputs.title }}" --description "${{ inputs.description }}" > publish/youtube_result.json
+          cat publish/youtube_result.json
+      - name: Resume n8n with result
+        if: ${{ always() && inputs.resumeUrl != '' }}
+        env:
+          RESUME_URL: ${{ inputs.resumeUrl }}
+          JOB_ID: ${{ inputs.job_id }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          from pathlib import Path
+          f=Path('publish/youtube_result.json')
+          data=json.loads(f.read_text()) if f.exists() else {'status':'failed','stage':'youtube_upload'}
+          data['jobId']=os.environ['JOB_ID']
+          req=urllib.request.Request(os.environ['RESUME_URL'],data=json.dumps(data).encode(),headers={'Content-Type':'application/json'},method='POST')
+          with urllib.request.urlopen(req,timeout=60) as r: print(r.status)
+          PY
