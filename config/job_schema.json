@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kids Video Job",
+  "type": "object",
+  "required": ["jobId", "content", "video"],
+  "properties": {
+    "jobId": {"type":"string","minLength":1},
+    "content": {
+      "type":"object",
+      "required":["topic","ageRange","language","story"],
+      "properties": {
+        "topic":{"type":"string","minLength":1},
+        "ageRange":{"type":"string","minLength":1},
+        "language":{"type":"string","minLength":1},
+        "story":{"type":"string","minLength":1},
+        "scenes":{"type":"array"}
+      }
+    },
+    "video": {
+      "type":"object",
+      "required":["width","height","fps"],
+      "properties": {
+        "width":{"type":"integer","minimum":1},
+        "height":{"type":"integer","minimum":1},
+        "fps":{"type":"integer","minimum":1},
+        "durationSeconds":{"type":"number","minimum":0}
+      }
+    }
+  }
+}
