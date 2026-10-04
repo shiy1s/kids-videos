@@ -1,3 +1,8 @@
 {
-  "jobs": []
+  "jobs": [
+    {
+      "jobId": "kids-20261004",
+      "status": "reserved"
+    }
+  ]
 }
