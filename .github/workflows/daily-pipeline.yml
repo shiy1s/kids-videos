@@ -2,14 +2,13 @@ name: Daily Kids Video Pipeline
 
 on:
   schedule:
-    - cron: "0 10 * * *"
-      timezone: "Asia/Kolkata"
+    - cron: "30 4 * * *"
   workflow_dispatch:
 
 run-name: Kids Daily Video
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: kids-daily-pipeline
@@ -23,7 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Install media and YouTube dependencies
         run: |
@@ -40,52 +39,14 @@ jobs:
           python scripts/generate/create_daily_job.py --output worker/job.json
           cat worker/job.json
 
-      - name: Reserve job ID before any YouTube upload
-        id: reserve
-        shell: bash
-        run: |
-          set -euo pipefail
-          JOB_ID="$(python - <<'PY'
-          import json
-          print(json.load(open("worker/job.json", encoding="utf-8"))["jobId"])
-          PY
-          )"
-          export JOB_ID
-          python - <<'PY'
-          import json, os
-          from pathlib import Path
-          path = Path("state/published_jobs.json")
-          data = json.loads(path.read_text(encoding="utf-8"))
-          jobs = data.setdefault("jobs", [])
-          job_id = os.environ["JOB_ID"]
-          existing = next((j for j in jobs if j.get("jobId") == job_id), None)
-          if existing and existing.get("status") in {"reserved", "published"}:
-              print(f"JOB_ALREADY_HANDLED:{job_id}:{existing.get('status')}")
-              Path(os.environ["GITHUB_OUTPUT"]).write_text("skip=true\\n", encoding="utf-8")
-              raise SystemExit(0)
-          jobs[:] = [j for j in jobs if j.get("jobId") != job_id]
-          jobs.append({"jobId": job_id, "status": "reserved"})
-          path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-          print(f"RESERVED:{job_id}")
-          Path(os.environ["GITHUB_OUTPUT"]).write_text("skip=false\\n", encoding="utf-8")
-          PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add state/published_jobs.json
-          git commit -m "Reserve Kids Video ${JOB_ID}" || true
-          git push
-
       - name: Generate, render, and QC
-        if: ${{ steps.reserve.outputs.skip != 'true' }}
         run: |
           set -euo pipefail
           mkdir -p worker/output
-          python scripts/generate/run_media_worker.py \
-            --job-json worker/job.json \
-            --output-dir worker/output
+          python scripts/generate/run_media_worker.py             --job-json worker/job.json             --output-dir worker/output
+          test -s worker/output/artifacts/kids-video.mp4
 
       - name: Keep rendered video as a short-lived debug artifact
-        if: ${{ steps.reserve.outputs.skip != 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: kids-video-${{ github.run_id }}
@@ -94,13 +55,15 @@ jobs:
           retention-days: 3
 
       - name: Upload privately to YouTube
-        if: ${{ steps.reserve.outputs.skip != 'true' }}
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
         run: |
           set -euo pipefail
+          test -n "$YOUTUBE_CLIENT_ID"
+          test -n "$YOUTUBE_CLIENT_SECRET"
+          test -n "$YOUTUBE_REFRESH_TOKEN"
           TITLE="$(python - <<'PY'
           import json
           print(json.load(open("worker/job.json", encoding="utf-8"))["content"]["title"])
@@ -112,38 +75,19 @@ jobs:
           print(j["content"]["story"] + "\n\nOriginal child-directed cartoon.\nJob ID: " + j["jobId"])
           PY
           )"
-          python scripts/publish/upload_youtube.py \
-            --video worker/output/artifacts/kids-video.mp4 \
-            --title "$TITLE" \
-            --description "$DESCRIPTION" \
-            > worker/youtube_result.json
+          python scripts/publish/upload_youtube.py             --video worker/output/artifacts/kids-video.mp4             --title "$TITLE"             --description "$DESCRIPTION"             > worker/youtube_result.json
           cat worker/youtube_result.json
 
-      - name: Mark job published
-        if: ${{ steps.reserve.outputs.skip != 'true' && success() }}
-        shell: bash
+      - name: Verify YouTube response
         run: |
           set -euo pipefail
           python - <<'PY'
           import json
           from pathlib import Path
-          job = json.loads(Path("worker/job.json").read_text(encoding="utf-8"))
-          result = json.loads(Path("worker/youtube_result.json").read_text(encoding="utf-8"))
-          path = Path("state/published_jobs.json")
-          data = json.loads(path.read_text(encoding="utf-8"))
-          for item in data["jobs"]:
-              if item.get("jobId") == job["jobId"]:
-                  item.update({
-                      "status": "published",
-                      "youtubeVideoId": result["youtubeVideoId"],
-                      "privacyStatus": result.get("privacyStatus", "private"),
-                      "madeForKids": result.get("madeForKids", True),
-                  })
-                  break
-          path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+          r=json.loads(Path("worker/youtube_result.json").read_text(encoding="utf-8"))
+          assert r.get("status") == "success", r
+          assert r.get("youtubeVideoId"), r
+          assert r.get("privacyStatus") == "private", r
+          assert r.get("madeForKids") is True, r
+          print("YOUTUBE_UPLOAD_VERIFIED", r["youtubeVideoId"])
           PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add state/published_jobs.json
-          git commit -m "Record Kids Video upload" || true
-          git push
