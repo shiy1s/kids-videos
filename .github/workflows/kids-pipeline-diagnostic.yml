@@ -1,9 +1,9 @@
 name: Kids Pipeline Diagnostic
 
 on:
-  push:
-    paths:
-      - ".github/workflows/kids-pipeline-diagnostic.yml"
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -15,8 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Check whether diagnostic already succeeded
+        id: guard
+        run: |
+          if [ -f state/kids_pipeline_diagnostic.json ] && grep -q '"youtubeUpload": "success"' state/kids_pipeline_diagnostic.json; then
+            echo "done=true" >> "$GITHUB_OUTPUT"
+            echo "Diagnostic already succeeded; no duplicate upload."
+          else
+            echo "done=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install dependencies
         id: deps
+        if: ${{ steps.guard.outputs.done != 'true' }}
         run: |
           set -euo pipefail
           sudo apt-get update
@@ -26,6 +37,7 @@ jobs:
 
       - name: Generate, render, and QC
         id: media
+        if: ${{ steps.guard.outputs.done != 'true' }}
         run: |
           set -euo pipefail
           mkdir -p worker/output
@@ -36,6 +48,7 @@ jobs:
 
       - name: YouTube OAuth and upload
         id: youtube
+        if: ${{ steps.guard.outputs.done != 'true' }}
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
@@ -48,7 +61,7 @@ jobs:
           python scripts/publish/upload_youtube.py             --video worker/output/artifacts/kids-video.mp4             --title "Kids Pipeline Diagnostic - Milo and Pip"             --description "Private diagnostic upload for the automated Kids Video pipeline."
 
       - name: Record diagnostic result
-        if: ${{ always() }}
+        if: ${{ always() && steps.guard.outputs.done != 'true' }}
         env:
           DEPS: ${{ steps.deps.outcome }}
           MEDIA: ${{ steps.media.outcome }}
