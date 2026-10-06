@@ -10,7 +10,14 @@ import argparse
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
+
+# When this file is executed directly, Python starts with scripts/generate on sys.path.
+# Add the repository root so the worker can import its sibling package reliably.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.generate.procedural_assets import make_scene
 
