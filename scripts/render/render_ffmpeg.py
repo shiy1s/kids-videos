@@ -44,27 +44,36 @@ def main() -> int:
             audio = scene.get("audioPath")
             segment = tmpdir / f"scene_{index:03d}.mp4"
 
+            # FFmpeg requires all input options (-i) before output filters/options.
             video_cmd = [
-                "ffmpeg", "-y", "-loop", "1", "-i", image,
-                "-t", str(duration),
-                "-vf",
-                "scale=1080:1920:force_original_aspect_ratio=increase,"
-                "crop=1080:1920,"
-                "zoompan=z='min(zoom+0.0008,1.08)':"
-                "d=1:s=1080x1920:fps=30",
+                "ffmpeg", "-y",
+                "-loop", "1", "-i", image,
             ]
 
             if audio and Path(audio).exists():
                 video_cmd += [
                     "-i", audio,
+                    "-t", str(duration),
+                    "-vf",
+                    "scale=1080:1920:force_original_aspect_ratio=increase,"
+                    "crop=1080:1920,"
+                    "zoompan=z='min(zoom+0.0008,1.08)':"
+                    "d=1:s=1080x1920:fps=30",
                     "-filter_complex", "[1:a]apad[a]",
                     "-map", "0:v:0", "-map", "[a]",
-                    "-t", str(duration),
                     "-c:v", "libx264", "-c:a", "aac",
                     "-b:a", "128k", "-pix_fmt", "yuv420p",
                 ]
             else:
-                video_cmd += ["-an", "-c:v", "libx264", "-pix_fmt", "yuv420p"]
+                video_cmd += [
+                    "-t", str(duration),
+                    "-vf",
+                    "scale=1080:1920:force_original_aspect_ratio=increase,"
+                    "crop=1080:1920,"
+                    "zoompan=z='min(zoom+0.0008,1.08)':"
+                    "d=1:s=1080x1920:fps=30",
+                    "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                ]
 
             video_cmd.append(str(segment))
             run(video_cmd)
