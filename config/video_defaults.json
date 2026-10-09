@@ -11,6 +11,6 @@
     "childDirected": true
   },
   "publishing": {
-    "defaultPrivacyStatus": "private"
+    "defaultPrivacyStatus": "public"
   }
 }
