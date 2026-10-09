@@ -43,7 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p worker/output
-          python scripts/generate/run_media_worker.py             --job-json worker/job.json             --output-dir worker/output
+          python scripts/generate/run_media_worker.py --job-json worker/job.json --output-dir worker/output
           test -s worker/output/artifacts/kids-video.mp4
 
       - name: Keep rendered video as a short-lived debug artifact
@@ -54,7 +54,7 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      - name: Upload privately to YouTube
+      - name: Upload publicly to YouTube
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
@@ -75,7 +75,7 @@ jobs:
           print(j["content"]["story"] + "\n\nOriginal child-directed cartoon.\nJob ID: " + j["jobId"])
           PY
           )"
-          python scripts/publish/upload_youtube.py             --video worker/output/artifacts/kids-video.mp4             --title "$TITLE"             --description "$DESCRIPTION"             > worker/youtube_result.json
+          python scripts/publish/upload_youtube.py --video worker/output/artifacts/kids-video.mp4 --title "$TITLE" --description "$DESCRIPTION" > worker/youtube_result.json
           cat worker/youtube_result.json
 
       - name: Verify YouTube response
@@ -87,7 +87,7 @@ jobs:
           r=json.loads(Path("worker/youtube_result.json").read_text(encoding="utf-8"))
           assert r.get("status") == "success", r
           assert r.get("youtubeVideoId"), r
-          assert r.get("privacyStatus") == "private", r
+          assert r.get("privacyStatus") == "public", r
           assert r.get("madeForKids") is True, r
-          print("YOUTUBE_UPLOAD_VERIFIED", r["youtubeVideoId"])
+          print("YOUTUBE_PUBLIC_UPLOAD_VERIFIED", r["youtubeVideoId"])
           PY
