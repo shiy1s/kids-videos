@@ -14,10 +14,10 @@ def main()->int:
     if not all((cid,cs,rt)): raise SystemExit("YOUTUBE_OAUTH_SECRET_MISSING")
     creds=Credentials(token=None,refresh_token=rt,token_uri="https://oauth2.googleapis.com/token",client_id=cid,client_secret=cs,scopes=SCOPES);creds.refresh(Request())
     youtube=build("youtube","v3",credentials=creds)
-    body={"snippet":{"title":a.title[:100],"description":a.description[:5000],"tags":[t.strip() for t in a.tags.split(",") if t.strip()],"categoryId":"1","defaultLanguage":"en"},"status":{"privacyStatus":"private","selfDeclaredMadeForKids":True,"publicStatsViewable":False,"embeddable":True}}
+    body={"snippet":{"title":a.title[:100],"description":a.description[:5000],"tags":[t.strip() for t in a.tags.split(",") if t.strip()],"categoryId":"1","defaultLanguage":"en"},"status":{"privacyStatus":"public","selfDeclaredMadeForKids":True,"publicStatsViewable":True,"embeddable":True}}
     req=youtube.videos().insert(part="snippet,status",body=body,media_body=MediaFileUpload(str(a.video),mimetype="video/mp4",resumable=True))
     response=None
     while response is None: _,response=req.next_chunk()
-    print(json.dumps({"status":"success","youtubeVideoId":response["id"],"privacyStatus":response.get("status",{}).get("privacyStatus","private"),"madeForKids":response.get("status",{}).get("selfDeclaredMadeForKids",True),"title":response.get("snippet",{}).get("title",a.title)}))
+    print(json.dumps({"status":"success","youtubeVideoId":response["id"],"privacyStatus":response.get("status",{}).get("privacyStatus","unknown"),"madeForKids":response.get("status",{}).get("selfDeclaredMadeForKids",True),"title":response.get("snippet",{}).get("title",a.title)}))
     return 0
 if __name__=="__main__": raise SystemExit(main())
