@@ -54,40 +54,9 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      - name: Upload publicly to YouTube
-        env:
-          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
-          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+      - name: Quality gate — hold publishing until animation upgrade is approved
         run: |
           set -euo pipefail
-          test -n "$YOUTUBE_CLIENT_ID"
-          test -n "$YOUTUBE_CLIENT_SECRET"
-          test -n "$YOUTUBE_REFRESH_TOKEN"
-          TITLE="$(python - <<'PY'
-          import json
-          print(json.load(open("worker/job.json", encoding="utf-8"))["content"]["title"])
-          PY
-          )"
-          DESCRIPTION="$(python - <<'PY'
-          import json
-          j=json.load(open("worker/job.json", encoding="utf-8"))
-          print(j["content"]["story"] + "\n\nOriginal child-directed cartoon.\nJob ID: " + j["jobId"])
-          PY
-          )"
-          python scripts/publish/upload_youtube.py --video worker/output/artifacts/kids-video.mp4 --title "$TITLE" --description "$DESCRIPTION" > worker/youtube_result.json
-          cat worker/youtube_result.json
-
-      - name: Verify YouTube response
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          r=json.loads(Path("worker/youtube_result.json").read_text(encoding="utf-8"))
-          assert r.get("status") == "success", r
-          assert r.get("youtubeVideoId"), r
-          assert r.get("privacyStatus") == "public", r
-          assert r.get("madeForKids") is True, r
-          print("YOUTUBE_PUBLIC_UPLOAD_VERIFIED", r["youtubeVideoId"])
-          PY
+          echo "RENDER_ONLY_MODE: generated video is available as a GitHub artifact."
+          echo "Public publishing is intentionally paused while the low-quality procedural visuals and synthetic narration are replaced."
+          echo "No video was uploaded by this workflow."
