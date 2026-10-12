@@ -1,0 +1,83 @@
+name: Verify YouTube Channel (No Upload)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-channel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install YouTube API dependencies
+        run: python -m pip install --disable-pip-version-check google-api-python-client google-auth google-auth-httplib2
+
+      - name: Verify OAuth channel only (does not upload)
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+          from google.auth.transport.requests import Request
+          from google.oauth2.credentials import Credentials
+          from googleapiclient.discovery import build
+          from googleapiclient.errors import HttpError
+
+          expected = "UC4lsyrsTBdJ0GVhOKgoUs4g"
+          names = ("YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET", "YOUTUBE_REFRESH_TOKEN")
+          if not all(os.environ.get(name) for name in names):
+              print("FAIL: One or more required GitHub secrets are missing.")
+              sys.exit(1)
+
+          creds = Credentials(
+              token=None,
+              refresh_token=os.environ["YOUTUBE_REFRESH_TOKEN"],
+              token_uri="https://oauth2.googleapis.com/token",
+              client_id=os.environ["YOUTUBE_CLIENT_ID"],
+              client_secret=os.environ["YOUTUBE_CLIENT_SECRET"],
+              scopes=[
+                  "https://www.googleapis.com/auth/youtube.upload",
+                  "https://www.googleapis.com/auth/youtube.readonly",
+              ],
+          )
+          try:
+              creds.refresh(Request())
+              api = build("youtube", "v3", credentials=creds, cache_discovery=False)
+              result = api.channels().list(part="id,snippet", mine=True).execute()
+          except HttpError as exc:
+              print(f"FAIL: YouTube channel lookup returned HTTP {exc.resp.status}.")
+              print("Check that the refresh token was authorized with youtube.readonly.")
+              sys.exit(1)
+          except Exception as exc:
+              print(f"FAIL: OAuth/channel verification failed ({type(exc).__name__}).")
+              print("No video was uploaded.")
+              sys.exit(1)
+
+          items = result.get("items", [])
+          if len(items) != 1:
+              print(f"FAIL: Expected one authenticated channel; found {len(items)}.")
+              sys.exit(1)
+
+          channel = items[0]
+          actual = channel.get("id", "")
+          title = channel.get("snippet", {}).get("title", "(title unavailable)")
+          if actual != expected:
+              print("FAIL: OAuth token is connected to a different YouTube channel.")
+              print(f"Authenticated channel title: {title}")
+              print(f"Authenticated channel ID: {actual}")
+              print(f"Expected HAPPY HIPPO channel ID: {expected}")
+              sys.exit(1)
+
+          print("PASS: OAuth token matches the expected HAPPY HIPPO channel.")
+          print(f"Channel title: {title}")
+          print(f"Channel ID: {actual}")
+          print("NO VIDEO WAS UPLOADED.")
+          PY
