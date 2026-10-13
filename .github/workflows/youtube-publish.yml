@@ -32,6 +32,13 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      # Fail closed: the current renderer still uses procedural stills and espeak-ng.
+      # This release hold must not be removed until a newly rendered pilot passes
+      # documented visual, narration, music, and storytelling review.
+      - name: Mandatory quality-review release gate
+        run: |
+          echo "::error::PUBLIC PUBLISHING PAUSED: the current pilot has not passed the animation, narration, music, and storytelling review. No upload will be attempted."
+          exit 1
       - uses: actions/checkout@v5
       - name: Install YouTube client
         run: |
