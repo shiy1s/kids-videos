@@ -1,0 +1,303 @@
+{
+  "schemaVersion": 1,
+  "canvas": {
+    "width": 540,
+    "height": 960,
+    "fps": 12,
+    "demoSeconds": 5
+  },
+  "characters": {
+    "Bibi": {
+      "placeholder": true,
+      "designNote": "PLACEHOLDER RIG — not approved final character art",
+      "canvas": {
+        "width": 540,
+        "height": 960
+      },
+      "layers": [
+        {
+          "name": "legs",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": null,
+          "z": 10,
+          "pivot": [
+            270,
+            600
+          ]
+        },
+        {
+          "name": "body",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": null,
+          "z": 20,
+          "pivot": [
+            270,
+            500
+          ]
+        },
+        {
+          "name": "arm_left",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "body",
+          "z": 25,
+          "pivot": [
+            205,
+            490
+          ]
+        },
+        {
+          "name": "arm_right",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "body",
+          "z": 26,
+          "pivot": [
+            335,
+            490
+          ]
+        },
+        {
+          "name": "head",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "body",
+          "z": 30,
+          "pivot": [
+            270,
+            390
+          ]
+        },
+        {
+          "name": "eyes_open",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "head",
+          "z": 40,
+          "pivot": [
+            270,
+            390
+          ]
+        },
+        {
+          "name": "eyes_closed",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "head",
+          "z": 41,
+          "pivot": [
+            270,
+            390
+          ]
+        }
+      ],
+      "mouthShapes": [
+        "closed",
+        "A",
+        "E",
+        "O",
+        "U",
+        "MBP",
+        "FV",
+        "smile",
+        "sad"
+      ],
+      "eyeStates": [
+        "open",
+        "closed"
+      ]
+    },
+    "Tiko": {
+      "placeholder": true,
+      "designNote": "PLACEHOLDER RIG — not approved final character art",
+      "canvas": {
+        "width": 540,
+        "height": 960
+      },
+      "layers": [
+        {
+          "name": "legs",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": null,
+          "z": 10,
+          "pivot": [
+            270,
+            600
+          ]
+        },
+        {
+          "name": "body",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": null,
+          "z": 20,
+          "pivot": [
+            270,
+            500
+          ]
+        },
+        {
+          "name": "arm_left",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "body",
+          "z": 25,
+          "pivot": [
+            205,
+            490
+          ]
+        },
+        {
+          "name": "arm_right",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "body",
+          "z": 26,
+          "pivot": [
+            335,
+            490
+          ]
+        },
+        {
+          "name": "head",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "body",
+          "z": 30,
+          "pivot": [
+            270,
+            390
+          ]
+        },
+        {
+          "name": "eyes_open",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "head",
+          "z": 40,
+          "pivot": [
+            270,
+            390
+          ]
+        },
+        {
+          "name": "eyes_closed",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "head",
+          "z": 41,
+          "pivot": [
+            270,
+            390
+          ]
+        }
+      ],
+      "mouthShapes": [
+        "closed",
+        "A",
+        "E",
+        "O",
+        "U",
+        "MBP",
+        "FV",
+        "smile",
+        "sad"
+      ],
+      "eyeStates": [
+        "open",
+        "closed"
+      ]
+    },
+    "Momo": {
+      "placeholder": true,
+      "designNote": "PLACEHOLDER RIG — not approved final character art",
+      "canvas": {
+        "width": 540,
+        "height": 960
+      },
+      "layers": [
+        {
+          "name": "legs",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": null,
+          "z": 10,
+          "pivot": [
+            270,
+            600
+          ]
+        },
+        {
+          "name": "body",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": null,
+          "z": 20,
+          "pivot": [
+            270,
+            500
+          ]
+        },
+        {
+          "name": "arm_left",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "body",
+          "z": 25,
+          "pivot": [
+            205,
+            490
+          ]
+        },
+        {
+          "name": "arm_right",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "body",
+          "z": 26,
+          "pivot": [
+            335,
+            490
+          ]
+        },
+        {
+          "name": "head",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "body",
+          "z": 30,
+          "pivot": [
+            270,
+            390
+          ]
+        },
+        {
+          "name": "eyes_open",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "head",
+          "z": 40,
+          "pivot": [
+            270,
+            390
+          ]
+        },
+        {
+          "name": "eyes_closed",
+          "file": "PLACEHOLDER_GENERATED",
+          "parent": "head",
+          "z": 41,
+          "pivot": [
+            270,
+            390
+          ]
+        }
+      ],
+      "mouthShapes": [
+        "closed",
+        "A",
+        "E",
+        "O",
+        "U",
+        "MBP",
+        "FV",
+        "smile",
+        "sad"
+      ]
+    }
+  },
+  "gestures": [
+    "wave",
+    "point",
+    "clap",
+    "walk"
+  ],
+  "emotions": [
+    "happy",
+    "sad",
+    "surprised"
+  ]
+}
