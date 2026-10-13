@@ -56,7 +56,7 @@ jobs:
         run: |
           VIDEO="$(find publish -type f -name 'kids-video.mp4' | head -n 1)"
           test -n "$VIDEO"
-          cp "$VIDEO" publish/kids-video.mp4
+          if [ "$VIDEO" != "publish/kids-video.mp4" ]; then cp "$VIDEO" publish/kids-video.mp4; fi
       - name: Upload privately to YouTube
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
