@@ -56,9 +56,11 @@ def main() -> int:
         make_scene(scene, int(scene["order"]) - 1, image_path)
 
         narration = scene["narration"].strip()
+        # Use a softer, higher female voice preset and gentler pacing.
+        # Avoid the low-pitched, suspense-like delivery of the previous default voice.
         run([
-            "espeak-ng", "-s", "145", "-p", "55", "-a", "145",
-            "-w", str(audio_path), narration,
+            "espeak-ng", "-v", "en-us+f3", "-s", "138", "-p", "70", "-a", "120",
+            "-g", "3", "-w", str(audio_path), narration,
         ])
 
         manifest_scenes.append({
@@ -72,9 +74,17 @@ def main() -> int:
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     output = artifacts / "kids-video.mp4"
+    music_path = audio / "gentle_background_music.wav"
+    duration = sum(float(scene["durationSeconds"]) for scene in scenes)
+    run([
+        "python", "scripts/generate/soft_music.py",
+        "--duration", str(duration),
+        "--output", str(music_path),
+    ])
     run([
         "python", "scripts/render/render_ffmpeg.py",
         "--manifest", str(manifest_path),
+        "--music", str(music_path),
         "--output", str(output),
     ])
 
