@@ -83,6 +83,23 @@ def draw_tiko_details(draw, x, y, s):
                            radius=10*s, fill="#FFB34F", outline="#B96C30", width=max(2, int(3*s)))
 
 
+
+def draw_momo(draw, x, y, s):
+    """Momo: a peach-colored bird friend with a lilac cap and a sunny beak."""
+    draw.ellipse((x-76*s, y-70*s, x-48*s, y-20*s), fill="#FFD16A")
+    draw.ellipse((x+48*s, y-70*s, x+76*s, y-20*s), fill="#FFD16A")
+    draw.ellipse((x-85*s, y-132*s, x+85*s, y+32*s), fill="#FFB18F", outline="#9A6657", width=max(2, int(4*s)))
+    draw.ellipse((x-54*s, y-76*s, x-30*s, y-50*s), fill="#263238")
+    draw.ellipse((x+30*s, y-76*s, x+54*s, y-50*s), fill="#263238")
+    draw.arc((x-32*s, y-43*s, x+32*s, y-5*s), 5, 175, fill="#7A4A42", width=max(2, int(4*s)))
+    draw.polygon([(x-9*s, y-35*s), (x+9*s, y-35*s), (x, y-18*s)], fill="#FFD34D")
+    draw.ellipse((x-67*s, y-38*s, x-42*s, y-22*s), fill="#FF8FA3")
+    draw.ellipse((x+42*s, y-38*s, x+67*s, y-22*s), fill="#FF8FA3")
+    draw.ellipse((x-70*s, y-157*s, x+70*s, y-112*s), fill="#BCA7FF", outline="#7965B2", width=max(2, int(3*s)))
+    draw.rounded_rectangle((x-82*s, y-125*s, x+82*s, y-111*s), radius=6*s, fill="#9D87E8")
+    draw.ellipse((x-17*s, y-155*s, x+17*s, y-135*s), fill="#FFD34D")
+
+
 def scene_background(draw, kind, sky, ground, accent):
     draw.rectangle((0, 0, W, H), fill=sky)
     if kind == "night":
@@ -119,9 +136,12 @@ def scene_background(draw, kind, sky, ground, accent):
 
 def choose_kind(prompt: str, order: int) -> str:
     p = prompt.lower()
-    for word, kind in [("home","home"),("house","home"),("garden","garden"),("flower","garden"),
-                       ("water","water"),("river","water"),("pond","water"),("night","night"),
-                       ("moon","night"),("bed","home")]:
+    for word, kind in [("home","home"),("house","home"),("living room","home"),("bedroom","home"),
+                       ("kitchen","home"),("playroom","home"),("table","home"),("reading nook","home"),
+                       ("garden","garden"),("flower","garden"),("park","garden"),("playground","garden"),
+                       ("field","garden"),("meadow","garden"),("neighborhood","garden"),("sidewalk","garden"),
+                       ("beach","water"),("pond","water"),("water","water"),("river","water"),
+                       ("night","night"),("moon","night"),("bed","home")]:
         if word in p:
             return kind
     return ["garden","home","water","garden","home","night"][max(0, order-1) % 6]
@@ -142,6 +162,9 @@ def make_scene(scene: dict, index: int, output: Path) -> None:
 
     # Simple scene prop selected from keywords.
     p = scene.get("visualPrompt","").lower()
+    if "momo" in p.lower() or "new friend" in p.lower():
+        draw_momo(draw, 930, 1190, 0.58)
+
     if any(k in p for k in ("ball", "play")):
         draw.ellipse((465, 1270, 600, 1405), fill="#FF6B6B", outline="#7A3E3E", width=6)
     elif any(k in p for k in ("flower", "garden")):
