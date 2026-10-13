@@ -28,7 +28,7 @@ STORIES = [
             ("Bibi sees a blue button roll beneath a cushion; Tiko points in surprise.", "Oh! Where did blue go?"),
             ("Bibi and Tiko look beside yellow and red toys.", "Not red. Not yellow. Let's look!"),
             ("They search slowly and peek behind a cushion.", "Can you spot the blue button?"),
-            ("Pause for the child to answer; Tiko lifts the cushion.", "Pause for three seconds, then: There it is!"),
+            ("Pause for the child to answer; Tiko lifts the cushion.", "There it is!"),
             ("Bibi places the blue button beside matching blue blocks.", "Blue with blue. We found it!"),
             ("Both friends wave while three blue objects gently bounce.", "Blue is our color. We looked together! " + SIGN_OFF),
         ],
@@ -215,6 +215,7 @@ def main() -> int:
         "location": story["location"],
         "motionRequired": True,
         "camera": ["wide", "close-up", "tracking", "over-shoulder", "slow-push-in", "wide"][i-1],
+        "callResponsePauseSeconds": 3 if story["topic"] == "colors" and i == 3 else 0,
     } for i, (visual, narration) in enumerate(story["scenes"], start=1)]
     job = {
         "jobId": f"kids-{date_id}",
