@@ -1,9 +1,4 @@
-"""Generate original cartoon assets locally, render, and QC a Kids Video job.
-
-No paid AI API is used. Images are procedural Pillow artwork and narration uses
-the open-source espeak-ng command installed on the GitHub runner.
-"""
-
+"""Generate original 2D scene animation, narration, music, and a QC-checked preview."""
 from __future__ import annotations
 
 import argparse
@@ -13,8 +8,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-# When this file is executed directly, Python starts with scripts/generate on sys.path.
-# Add the repository root so the worker can import its sibling package reliably.
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -31,41 +24,42 @@ def main() -> int:
     parser.add_argument("--job-json", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
-
     job = json.loads(args.job_json.read_text(encoding="utf-8"))
     scenes = job["content"]["scenes"]
     work = args.output_dir
-    images = work / "images"
+    frames_root = work / "frames"
     audio = work / "audio"
     artifacts = work / "artifacts"
-    images.mkdir(parents=True, exist_ok=True)
+    frames_root.mkdir(parents=True, exist_ok=True)
     audio.mkdir(parents=True, exist_ok=True)
     artifacts.mkdir(parents=True, exist_ok=True)
 
-    if not shutil.which("ffmpeg"):
-        raise RuntimeError("FFMPEG_NOT_INSTALLED")
-    if not shutil.which("espeak-ng"):
-        raise RuntimeError("ESPEAK_NG_NOT_INSTALLED")
+    for binary in ("ffmpeg", "espeak-ng"):
+        if not shutil.which(binary):
+            raise RuntimeError(f"{binary.upper().replace('-', '_')}_NOT_INSTALLED")
 
     manifest_scenes = []
+    frame_rate = 6
     for scene in scenes:
         scene_id = scene["sceneId"]
-        image_path = images / f"{scene_id}.png"
+        frame_dir = frames_root / scene_id
+        frame_dir.mkdir(parents=True, exist_ok=True)
+        duration = float(scene["durationSeconds"])
+        frame_count = max(1, int(duration * frame_rate))
+        for frame_no in range(frame_count):
+            frame_path = frame_dir / f"frame_{frame_no:04d}.png"
+            make_scene(scene, int(scene["order"]) - 1, frame_path, frame=frame_no, frame_rate=frame_rate)
+
         audio_path = audio / f"{scene_id}.wav"
-
-        make_scene(scene, int(scene["order"]) - 1, image_path)
-
         narration = scene["narration"].strip()
-        # Use a softer, higher female voice preset and gentler pacing.
-        # Avoid the low-pitched, suspense-like delivery of the previous default voice.
-        run([
-            "espeak-ng", "-v", "en-us+f3", "-s", "138", "-p", "70", "-a", "120",
-            "-g", "3", "-w", str(audio_path), narration,
-        ])
+        # Keep this known free voice as a fallback, not a claim of premium TTS.
+        run(["espeak-ng", "-v", "en-us+f3", "-s", "138", "-p", "70", "-a", "120",
+             "-g", "3", "-w", str(audio_path), narration])
 
         manifest_scenes.append({
             **scene,
-            "assetPath": str(image_path),
+            "framePattern": str(frame_dir / "frame_%04d.png"),
+            "frameRate": frame_rate,
             "audioPath": str(audio_path),
         })
 
@@ -76,26 +70,22 @@ def main() -> int:
     output = artifacts / "kids-video.mp4"
     music_path = audio / "gentle_background_music.wav"
     duration = sum(float(scene["durationSeconds"]) for scene in scenes)
-    run([
-        "python", "scripts/generate/soft_music.py",
-        "--duration", str(duration),
-        "--output", str(music_path),
-    ])
-    run([
-        "python", "scripts/render/render_ffmpeg.py",
-        "--manifest", str(manifest_path),
-        "--music", str(music_path),
-        "--output", str(output),
-    ])
+    run(["python", "scripts/generate/soft_music.py", "--duration", str(duration),
+         "--output", str(music_path)])
+    run(["python", "scripts/render/render_ffmpeg.py", "--manifest", str(manifest_path),
+         "--music", str(music_path), "--output", str(output)])
 
     run(["python", "scripts/qc/validate_media.py", str(output)])
-
     result = {
         "jobId": job["jobId"],
-        "status": "success",
-        "stage": "render_qc",
+        "status": "preview_rendered",
+        "stage": "technical_qc",
         "output": str(output),
         "sceneCount": len(manifest_scenes),
+        "frameRate": frame_rate,
+        "frameByFrameMotion": True,
+        "publishingApproved": False,
+        "note": "Human visual/audio review and lip-sync review are still required.",
     }
     (work / "worker_result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps(result))
