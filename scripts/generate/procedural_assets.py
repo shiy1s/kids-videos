@@ -147,40 +147,67 @@ def choose_kind(prompt: str, order: int) -> str:
     return ["garden","home","water","garden","home","night"][max(0, order-1) % 6]
 
 
-def make_scene(scene: dict, index: int, output: Path) -> None:
+def make_scene(scene: dict, index: int, output: Path, frame: int = 0, frame_rate: int = 12) -> None:
+    """Render one animation frame from the locked character designs.
+
+    Motion is intentionally gentle: character body bobs, arm poses alternate,
+    the kite/ball/flower props move, and characters blink occasionally.
+    """
     bg, sky2, accent, ground = palette(index)
     img = Image.new("RGB", (W, H), bg)
     draw = ImageDraw.Draw(img)
-    kind = choose_kind(scene.get("visualPrompt",""), int(scene.get("order", index + 1)))
+    kind = choose_kind(scene.get("visualPrompt", ""), int(scene.get("order", index + 1)))
     scene_background(draw, kind, bg, ground, accent)
 
-    # Original recurring characters: round-eared friends, not based on an existing franchise.
-    draw_character(draw, 360, 1050, 1.22, "#53C7A6", "#FFD34D", wave=index % 2 == 0)
-    draw_bibi_details(draw, 360, 1050, 1.22)
-    draw_character(draw, 730, 1110, 1.02, "#57BCEB", "#FFD0A8", wave=index % 2 == 1)
-    draw_tiko_details(draw, 730, 1110, 1.02)
+    t = frame / max(1, frame_rate)
+    phase = (frame // 6) % 2
+    bob_a = int(12 * math.sin(t * 2.8))
+    bob_b = int(10 * math.sin(t * 2.8 + 1.5))
+    x_a = int(10 * math.sin(t * 1.4))
+    x_b = int(8 * math.sin(t * 1.4 + 1.1))
+    blink_a = (frame % (frame_rate * 4)) in range(0, 2)
+    blink_b = ((frame + frame_rate * 2) % (frame_rate * 4)) in range(0, 2)
 
-    # Simple scene prop selected from keywords.
-    p = scene.get("visualPrompt","").lower()
-    if "momo" in p.lower() or "new friend" in p.lower():
-        draw_momo(draw, 930, 1190, 0.58)
+    # Original recurring characters. Pose and position vary frame by frame.
+    ax, ay = 360 + x_a, 1050 + bob_a
+    bx, by = 730 + x_b, 1110 + bob_b
+    draw_character(draw, ax, ay, 1.22, "#53C7A6", "#FFD34D", wave=phase == 0, blink=blink_a)
+    draw_bibi_details(draw, ax, ay, 1.22)
+    draw_character(draw, bx, by, 1.02, "#57BCEB", "#FFD0A8", wave=phase == 1, blink=blink_b)
+    draw_tiko_details(draw, bx, by, 1.02)
 
-    if any(k in p for k in ("ball", "play")):
-        draw.ellipse((465, 1270, 600, 1405), fill="#FF6B6B", outline="#7A3E3E", width=6)
-    elif any(k in p for k in ("flower", "garden")):
-        draw.line((540, 1240, 540, 1440), fill="#4D8C42", width=14)
+    p = scene.get("visualPrompt", "").lower()
+    prop_y = int(16 * math.sin(t * 3.2))
+    if "momo" in p or "new friend" in p:
+        draw_momo(draw, 930 + int(12 * math.sin(t * 1.7)), 1190 + prop_y, 0.58)
+
+    if any(k in p for k in ("ball", "play", "game")):
+        px = 530 + int(95 * math.sin(t * 1.5))
+        py = 1335 + int(24 * abs(math.sin(t * 3.0)))
+        draw.ellipse((px-68, py-68, px+68, py+68), fill="#FF6B6B", outline="#7A3E3E", width=6)
+        draw.arc((px-42, py-42, px+42, py+42), 30, 250, fill="#FFD166", width=7)
+    elif any(k in p for k in ("flower", "garden", "seed", "rainbow")):
+        sway = int(14 * math.sin(t * 2.0))
+        draw.line((540, 1240, 540+sway, 1440), fill="#4D8C42", width=14)
         for dx, dy in [(-35,-20),(35,-20),(0,-55)]:
-            draw.ellipse((540+dx-35,1240+dy-35,540+dx+35,1240+dy+35), fill="#FF9FB0")
-    elif any(k in p for k in ("book", "learn")):
-        draw.rounded_rectangle((470, 1280, 610, 1395), radius=10, fill="#7D8FEA", outline="#39456B", width=6)
-        draw.line((540,1290,540,1385), fill="#FFFFFF", width=5)
+            cx, cy = 540+sway, 1240+dy
+            draw.ellipse((cx+dx-35,cy-35,cx+dx+35,cy+35), fill="#FF9FB0")
+        draw.ellipse((540+sway-18, 1240-55-18, 540+sway+18, 1240-55+18), fill="#FFD166")
+    elif any(k in p for k in ("book", "learn", "puzzle")):
+        draw.rounded_rectangle((470, 1280+prop_y, 610, 1395+prop_y), radius=10, fill="#7D8FEA", outline="#39456B", width=6)
+        draw.line((540,1290+prop_y,540,1385+prop_y), fill="#FFFFFF", width=5)
+    elif any(k in p for k in ("kite", "breeze")):
+        kx = 800 + int(65 * math.sin(t * 1.6))
+        ky = 470 + int(45 * math.sin(t * 2.1))
+        draw.line((kx, ky+55, 650, 1110), fill="#8A6B58", width=4)
+        draw.polygon([(kx,ky-60),(kx+52,ky),(kx,ky+60),(kx-52,ky)], fill="#FF8FA3", outline="#A84C6B")
+        draw.line((kx,ky+60,kx+22,ky+100), fill="#8A6B58", width=4)
 
-    # Keep the picture clean: no generic scene labels across the artwork.
     caption = re.sub(r"[^A-Za-z0-9 '!?.,-]", "", scene.get("caption", "")).strip()
     if caption:
         draw.rounded_rectangle((65, 80, 1015, 175), radius=30, fill="#FFFFFF")
         draw.text((95, 105), caption[:42], fill="#344054")
-
+    output.parent.mkdir(parents=True, exist_ok=True)
     img.save(output, "PNG")
 
 
