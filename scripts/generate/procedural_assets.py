@@ -53,6 +53,36 @@ def draw_character(draw, x, y, scale, body, accent, facing=1, wave=False):
         draw.line((x+85*s, y+65*s, x+150*s, y+100*s), fill=body, width=max(8, int(25*s)))
 
 
+
+def draw_bibi_details(draw, x, y, s):
+    """Bibi: the channel's mint-green bunny kid with golden ears and teal overalls."""
+    draw.ellipse((x-82*s, y-78*s, x-53*s, y-27*s), fill="#FF8EAB")
+    draw.ellipse((x+53*s, y-78*s, x+82*s, y-27*s), fill="#FF8EAB")
+    draw.rounded_rectangle((x-76*s, y+48*s, x+76*s, y+151*s),
+                           radius=20*s, fill="#20A9A0", outline="#176F70", width=max(2, int(4*s)))
+    draw.rounded_rectangle((x-59*s, y+23*s, x-35*s, y+72*s),
+                           radius=8*s, fill="#20A9A0")
+    draw.rounded_rectangle((x+35*s, y+23*s, x+59*s, y+72*s),
+                           radius=8*s, fill="#20A9A0")
+    draw.ellipse((x-15*s, y+78*s, x+15*s, y+108*s), fill="#FFD34D")
+    draw.ellipse((x-78*s, y+1*s, x-49*s, y+21*s), fill="#FF9DAF")
+    draw.ellipse((x+49*s, y+1*s, x+78*s, y+21*s), fill="#FF9DAF")
+
+
+def draw_tiko_details(draw, x, y, s):
+    """Tiko: the sky-blue turtle kid with a leafy shell and a sunny orange cap."""
+    draw.ellipse((x-83*s, y-145*s, x+83*s, y-91*s), fill="#FF9A45", outline="#A95425", width=max(2, int(4*s)))
+    draw.rounded_rectangle((x-96*s, y-112*s, x+96*s, y-94*s),
+                           radius=8*s, fill="#F47C35")
+    draw.rounded_rectangle((x-72*s, y+34*s, x+72*s, y+143*s),
+                           radius=28*s, fill="#7BCB78", outline="#39865A", width=max(2, int(5*s)))
+    draw.arc((x-48*s, y+47*s, x+48*s, y+125*s), 180, 360,
+             fill="#39865A", width=max(2, int(4*s)))
+    draw.line((x, y+42*s, x, y+137*s), fill="#39865A", width=max(2, int(4*s)))
+    draw.rounded_rectangle((x+75*s, y+45*s, x+110*s, y+113*s),
+                           radius=10*s, fill="#FFB34F", outline="#B96C30", width=max(2, int(3*s)))
+
+
 def scene_background(draw, kind, sky, ground, accent):
     draw.rectangle((0, 0, W, H), fill=sky)
     if kind == "night":
@@ -105,9 +135,10 @@ def make_scene(scene: dict, index: int, output: Path) -> None:
     scene_background(draw, kind, bg, ground, accent)
 
     # Original recurring characters: round-eared friends, not based on an existing franchise.
-    draw_character(draw, 380, 1050, 1.35, "#7BC96F", "#FFF1B8", wave=index % 2 == 0)
-    if index % 3 != 1:
-        draw_character(draw, 700, 1110, 1.05, "#6BB7E8", "#FFD2A6", wave=index % 2 == 1)
+    draw_character(draw, 360, 1050, 1.22, "#53C7A6", "#FFD34D", wave=index % 2 == 0)
+    draw_bibi_details(draw, 360, 1050, 1.22)
+    draw_character(draw, 730, 1110, 1.02, "#57BCEB", "#FFD0A8", wave=index % 2 == 1)
+    draw_tiko_details(draw, 730, 1110, 1.02)
 
     # Simple scene prop selected from keywords.
     p = scene.get("visualPrompt","").lower()
@@ -121,11 +152,11 @@ def make_scene(scene: dict, index: int, output: Path) -> None:
         draw.rounded_rectangle((470, 1280, 610, 1395), radius=10, fill="#7D8FEA", outline="#39456B", width=6)
         draw.line((540,1290,540,1385), fill="#FFFFFF", width=5)
 
-    # Small title ribbon, generated from the job metadata only if short.
-    title = re.sub(r"[^A-Za-z0-9 '!-]", "", scene.get("sceneId","")).replace("_"," ")
-    if title:
+    # Keep the picture clean: no generic scene labels across the artwork.
+    caption = re.sub(r"[^A-Za-z0-9 '!?.,-]", "", scene.get("caption", "")).strip()
+    if caption:
         draw.rounded_rectangle((65, 80, 1015, 175), radius=30, fill="#FFFFFF")
-        draw.text((95, 105), title[:42], fill="#344054")
+        draw.text((95, 105), caption[:42], fill="#344054")
 
     img.save(output, "PNG")
 
