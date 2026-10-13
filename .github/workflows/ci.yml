@@ -33,15 +33,28 @@ jobs:
           test -f .env.example
           test -f STUDIO_BRIEF.md
           test -f episode_log.json
+          test -f quality_review_template.json
           test -f characters/character_bible.md
           test -f scripts/generate/run_media_worker.py
           test -f scripts/generate/procedural_assets.py
           test -f scripts/render/render_ffmpeg.py
           test -f scripts/qc/validate_media.py
+          test -f scripts/qc/quality_gate.py
           test -f scripts/publish/upload_youtube.py
           python -m json.tool episode_log.json >/dev/null
+          python -m json.tool quality_review_template.json >/dev/null
           python -m json.tool config/content_policy.json >/dev/null
           echo "Studio contract and repository structure OK"
+
+      - name: Verify empty review template is blocked
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python scripts/qc/quality_gate.py quality_review_template.json; then
+            echo "ERROR: an unreviewed template must never pass."
+            exit 1
+          fi
+          echo "Unreviewed release correctly blocked."
 
       - name: Test episode history and release safety
         run: python -m unittest discover -s tests -p 'test_*.py' -v
