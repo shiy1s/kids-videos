@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "channel": "HAPPY HIPPO",
+  "timezone": "Asia/Kolkata",
+  "episodes": [
+    {
+      "date": "2026-10-12",
+      "title": "Milo and Pip Tell the Truth",
+      "topic": "honesty",
+      "plot": "A small toy falls during play; one friend admits the mistake and both repair it together.",
+      "structure": "mistake-and-repair",
+      "song_fingerprint": "legacy episode; lyrics not recovered",
+      "status": "legacy_published",
+      "notes": "Legacy upload mentioned in project history; do not regenerate the same title/plot."
+    },
+    {
+      "date": "2026-10-13",
+      "title": "The Dancing Kite — Taking Turns",
+      "topic": "taking turns",
+      "plot": "Two friends share turns while playing with a dancing kite in the garden.",
+      "structure": "garden-play",
+      "song_fingerprint": "legacy episode; lyrics not recovered",
+      "status": "published",
+      "youtube_video_id": "WsP-OGFGUpk",
+      "notes": "Published pilot. Quality concerns reported by owner: basic geometric visuals and no clearly noticeable voice change. Do not treat as approved benchmark."
+    }
+  ],
+  "rules": {
+    "rejectDuplicateTopicPlot": true,
+    "rejectDuplicateSongFingerprint": true,
+    "legacyTopicsRemainReserved": true,
+    "appendOnly": true,
+    "updateOnlyAfterSuccessfulRenderAndReview": true
+  }
+}
