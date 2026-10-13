@@ -56,8 +56,18 @@ jobs:
           fi
           echo "Unreviewed release correctly blocked."
 
-      - name: Test episode history and release safety
+      - name: Test episode history, release safety, and rig
         run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Render placeholder rig proof clips
+        run: python render/rig.py --demo --output-dir artifacts
+
+      - name: Upload rig demo artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: rig-demo-${{ github.run_id }}
+          path: artifacts/rig_demo_*.mp4
+          retention-days: 7
 
       - name: Run media pipeline without YouTube upload
         shell: bash
