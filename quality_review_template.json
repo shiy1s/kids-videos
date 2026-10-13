@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "jobId": "",
+  "videoPath": "kids-video.mp4",
+  "reviewedAt": "",
+  "reviewer": "",
+  "technicalChecks": {
+    "dimensions1080x1920": false,
+    "fps30": false,
+    "duration45to60Seconds": false,
+    "audioPresent": false,
+    "noClipping": false,
+    "noSilenceOver1_5s": false,
+    "motionBeyondZoom": false,
+    "lipSyncChecked": false
+  },
+  "scores": {
+    "characterConsistency": 0,
+    "motionQuality": 0,
+    "storyOriginalityAndLearning": 0,
+    "voiceClarityAndEmotion": 0,
+    "childSafety": 0,
+    "parentSuitability": 0
+  },
+  "parentWouldApprove": false,
+  "voiceComparedAgainstPreviousEpisode": false,
+  "visualFramesReviewed": false,
+  "audioListenedToInFull": false,
+  "approvedForPublicPublishing": false,
+  "notes": "Every technical check must pass. Every score must be 8-10. Visual and audio review must be completed. Parent suitability must be YES. Otherwise publishing stays blocked."
+}
