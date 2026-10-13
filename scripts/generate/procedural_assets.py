@@ -23,7 +23,7 @@ def palette(index: int):
     return sets[index % len(sets)]
 
 
-def draw_character(draw, x, y, scale, body, accent, facing=1, wave=False):
+def draw_character(draw, x, y, scale, body, accent, facing=1, wave=False, blink=False):
     s = scale
     # shadow
     draw.ellipse((x-95*s, y+175*s, x+95*s, y+225*s), fill="#00000020")
@@ -39,8 +39,12 @@ def draw_character(draw, x, y, scale, body, accent, facing=1, wave=False):
     draw.ellipse((x-125*s, y-125*s, x+125*s, y+95*s), fill=accent, outline="#344054", width=max(2, int(5*s)))
     # eyes
     eye_dx = 42*s
-    draw.ellipse((x-eye_dx-13*s, y-45*s, x-eye_dx+13*s, y-19*s), fill="#263238")
-    draw.ellipse((x+eye_dx-13*s, y-45*s, x+eye_dx+13*s, y-19*s), fill="#263238")
+    if blink:
+        draw.line((x-eye_dx-13*s, y-32*s, x-eye_dx+13*s, y-32*s), fill="#263238", width=max(2, int(5*s)))
+        draw.line((x+eye_dx-13*s, y-32*s, x+eye_dx+13*s, y-32*s), fill="#263238", width=max(2, int(5*s)))
+    else:
+        draw.ellipse((x-eye_dx-13*s, y-45*s, x-eye_dx+13*s, y-19*s), fill="#263238")
+        draw.ellipse((x+eye_dx-13*s, y-45*s, x+eye_dx+13*s, y-19*s), fill="#263238")
     # smile
     draw.arc((x-48*s, y-5*s, x+48*s, y+55*s), 10, 170, fill="#263238", width=max(2, int(5*s)))
     # arms
